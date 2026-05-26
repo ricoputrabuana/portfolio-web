@@ -452,7 +452,7 @@
     border-radius: var(--radius-2xl);
   }
   .rounded-full {
-    border-radius: calc(infinity * 1px);
+    border-radius: calc(100 * 1px);
   }
   .rounded-lg {
     border-radius: var(--radius-lg);
