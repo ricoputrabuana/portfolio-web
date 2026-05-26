@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Audio Reactive Wave + Beat Pulse (Slow Motion - Taller Wave)</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, Segoe UI, Roboto;
+    }
+    #ui {
+      position: fixed;
+      z-index: 20;
+      left: 20px;
+      top: 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(255,255,255,0.04);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    input[type=file] {
+      color: transparent;
+    }
+    button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 0;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+    }
+    #canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #hint {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <input id="file" type="file" accept="audio/*">
+    <button id="btnPlay">Play / Pause</button>
+    <button id="btnMic">Use Microphone</button>
+    <span id="hint">Pilih audio atau pakai mic → lihat orb dan wave merespon beat</span>
+  </div>
+  <canvas id="canvas"></canvas>
+  <audio id="audio" crossorigin="anonymous"></audio>
+  <script>
+    (function () {
+      // Canvas Setup
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      let W = canvas.width = innerWidth;
+      let H = canvas.height = innerHeight;
+
+      window.addEventListener('resize', () => {
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
+      });
+
+      // UI Elements
+      const audioEl = document.getElementById('audio');
+      const fileInput = document.getElementById('file');
+      const btnPlay = document.getElementById('btnPlay');
+      const btnMic = document.getElementById('btnMic');
+
+      // Audio Setup
+      let audioCtx, analyser, sourceNode;
+      let dataTime, dataFreq;
+      let smoothedTimeData = [];
+      let rafId;
+      let energyHistory = [];
+      const HISTORY_SIZE = 43;
+      let lastBeatTime = 0;
+      let beatCooldown = 200;
+
+      async function ensureAudioContext() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = 0.95;
+          dataTime = new Uint8Array(analyser.fftSize);
+          dataFreq = new Uint8Array(analyser.frequencyBinCount);
+          smoothedTimeData = new Float32Array(analyser.fftSize);
+        }
+      }
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        audioEl.src = url;
+        await ensureAudioContext();
+        connectAudioElement();
+        audioEl.play();
+        btnPlay.textContent = 'Pause';
+      });
+
+      btnPlay.addEventListener('click', async () => {
+        if (!audioEl.src) return alert('Pilih file audio dulu atau aktifkan mic.');
+        await ensureAudioContext();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        if (audioEl.paused) {
+          audioEl.play();
+          btnPlay.textContent = 'Pause';
+        } else {
+          audioEl.pause();
+          btnPlay.textContent = 'Play';
+        }
+      });
+
+      btnMic.addEventListener('click', async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          await ensureAudioContext();
+          if (sourceNode) sourceNode.disconnect();
+          sourceNode = audioCtx.createMediaStreamSource(stream);
+          sourceNode.connect(analyser);
+          if (audioEl && !audioEl.paused) {
+            audioEl.pause();
+            btnPlay.textContent = 'Play';
+          }
+        } catch (err) {
+          alert('Gagal akses microphone: ' + err.message);
+        }
+      });
+
+      function connectAudioElement() {
+        if (!audioCtx || !analyser) return;
+        if (sourceNode) sourceNode.disconnect();
+        sourceNode = audioCtx.createMediaElementSource(audioEl);
+        sourceNode.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      }
+
+      function detectBeat(freqData) {
+        let sum = 0;
+        for (let i = 0; i < freqData.length; i++) {
+          if (i > freqData.length * 0.25) break;
+          const v = freqData[i] / 255;
+          sum += v * v;
+        }
+        const instantEnergy = sum;
+        if (energyHistory.length >= HISTORY_SIZE) energyHistory.shift();
+        energyHistory.push(instantEnergy);
+        const avg = energyHistory.reduce((a, b) => a + b, 0) / energyHistory.length;
+        const threshold = Math.max(0.0025, avg * 1.8);
+        const now = performance.now();
+        if (instantEnergy > threshold && (now - lastBeatTime) > beatCooldown) {
+          lastBeatTime = now;
+          return { detected: true, energy: instantEnergy, avg };
+        }
+        return { detected: false, energy: instantEnergy, avg };
+      }
+
+      // Visual Elements & Animation
+      let orbBaseRadius = Math.min(W, H) * 0.06;
+      let orbPulse = 0;
+      let orbPulseTarget = 0;
+      const particles = [];
+      for (let i = 0; i < 120; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        particles.push({
+          a: angle,
+          r: orbBaseRadius + 30 + Math.random() * 80,
+          v: 0.002 + Math.random() * 0.006,
+          size: 1 + Math.random() * 3,
+          life: Math.random()
+        });
+      }
+
+      function drawBackground() {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#000000');
+        g.addColorStop(1, '#080810');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      let waveOffset = 0;
+      const waveSpeed = 0.05;
+      let amplitudeSmooth = 0;
+
+      function drawWave(timeData, ampLevel) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(180,200,255,0.9)';
+        ctx.beginPath();
+        const midY = H * 0.6;
+        const baseScaleY = H * 0.24;
+        const scaleY = baseScaleY * (0.7 + ampLevel * 1.3);
+        const step = Math.floor(timeData.length / (W / 3));
+        let x = W * 0.1;
+        const xEnd = W * 0.9;
+        const usable = xEnd - x;
+        waveOffset += waveSpeed;
+        const offsetIndex = Math.floor(waveOffset) % timeData.length;
+
+        for (let i = 0, j = 0; i < timeData.length && x <= xEnd; i += step, j++) {
+          const idx = (i + offsetIndex) % timeData.length;
+          const v = (timeData[idx] - 128) / 128;
+          const prev = smoothedTimeData[idx] || 0;
+          const smooth = prev + (v - prev) * 0.05;
+          smoothedTimeData[idx] = smooth;
+          const px = x + (j / (timeData.length / step)) * usable;
+          const py = midY + smooth * scaleY;
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          x += usable / (timeData.length / step);
+        }
+
+        ctx.stroke();
+        ctx.lineTo(xEnd, H);
+        ctx.lineTo(W * 0.1, H);
+        ctx.closePath();
+
+        const fg = ctx.createLinearGradient(0, midY - scaleY, 0, H);
+        fg.addColorStop(0, 'rgba(120,150,255,0.06)');
+        fg.addColorStop(1, 'rgba(10,10,14,0.0)');
+        ctx.fillStyle = fg;
+        ctx.fill();
+      }
+
+      function drawOrb(x, y, r, pulse) {
+        const glow = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 2.5);
+        glow.addColorStop(0, `rgba(160,140,255,${0.95 * pulse + 0.05})`);
+        glow.addColorStop(0.4, `rgba(120,160,255,${0.45 * pulse + 0.02})`);
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 2.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        const core = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+        core.addColorStop(0, '#ffffff');
+        core.addColorStop(0.35, '#9fb7ff');
+        core.addColorStop(0.65, '#9f6bff');
+        core.addColorStop(1, '#382b4b');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function render() {
+        rafId = requestAnimationFrame(render);
+        if (!analyser) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          ctx.font = '18px system-ui';
+          ctx.fillText('Pilih audio / aktifkan mic untuk demo audio-reactive', 20, 40);
+          return;
+        }
+        analyser.getByteTimeDomainData(dataTime);
+        analyser.getByteFrequencyData(dataFreq);
+        const beat = detectBeat(dataFreq);
+
+        let amp = 0;
+        const bins = Math.floor(dataFreq.length * 0.2);
+        for (let i = 0; i < bins; i++) amp += dataFreq[i];
+        amp = amp / (bins * 255);
+        amplitudeSmooth += (amp - amplitudeSmooth) * 0.05;
+
+        orbPulseTarget = beat.detected ? 1.0 + amplitudeSmooth * 2.0 : amplitudeSmooth * 0.8;
+        orbPulse += (orbPulseTarget - orbPulse) * 0.1;
+
+        drawBackground();
+        drawWave(dataTime, amplitudeSmooth);
+        const cx = W / 2;
+        const cy = H * 0.55;
+        const r = orbBaseRadius * (1 + orbPulse * 0.8);
+        drawOrb(cx, cy, r, orbPulse);
+      }
+
+      render();
+
+      document.addEventListener('click', async () => {
+        if (audioCtx && audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+      }, { once: true });
+
+      window.addEventListener('beforeunload', () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        if (audioCtx) audioCtx.close();
+      });
+    })();
+  </script>
+</body>
+</html>
