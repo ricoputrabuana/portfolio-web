@@ -80,9 +80,9 @@ export default function ProjectDetail() {
       <section className="max-w-5xl mx-auto px-6 py-12">
         <h2 className="text-2xl font-semibold text-purple-300 mb-8 text-center">Visual Showcase</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <img src="/images/aurora-1.png" className="rounded-lg shadow-md" />
-          <img src="/images/aurora-2.png" className="rounded-lg shadow-md" />
-          <img src="/images/aurora-3.png" className="rounded-lg shadow-md" />
+          <img src="/images/aurora-1.png" alt="Aurora screenshot 1" className="rounded-lg shadow-md" />
+          <img src="/images/aurora-2.png" alt="Aurora screenshot 2" className="rounded-lg shadow-md" />
+          <img src="/images/aurora-3.png" alt="Aurora screenshot 3" className="rounded-lg shadow-md" />
         </div>
       </section>
 
