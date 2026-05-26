@@ -31,6 +31,7 @@ function drawSkyGradient(ctx, W, H) {
 }
 
 function drawAurora(ctx, W, H, t) {
+  // ── LAYER 1: Band diagonal asli (tidak diubah) ──────────────────────────
   const colors = [
     "rgba(116,255,200,0.5)",
     "rgba(120,180,255,0.45)",
@@ -38,13 +39,13 @@ function drawAurora(ctx, W, H, t) {
     "rgba(255,150,220,0.4)",
   ];
 
-  ctx.globalCompositeOperation = "lighter"; // campur warna aurora lebih efisien
+  ctx.globalCompositeOperation = "lighter";
 
   for (let i = 0; i < colors.length; i++) {
     ctx.save();
     ctx.beginPath();
 
-    const baseY = H * 0.33 - i * 25;
+    const baseY = H * 0.3 - i * 25;
 
     ctx.moveTo(0, baseY + 100);
 
@@ -77,11 +78,73 @@ function drawAurora(ctx, W, H, t) {
     grad.addColorStop(1, "transparent");
 
     ctx.fillStyle = grad;
-    ctx.filter = `blur(${8 + i * 2}px)`; // blur lebih ringan
+    ctx.filter = `blur(${8 + i * 2}px)`;
     ctx.globalAlpha = 0.9 - i * 0.15;
     ctx.fill();
     ctx.restore();
   }
+
+  // ── LAYER 2: Ray vertikal seperti di gambar referensi ────────────────────
+  // Ray muncul dari band aurora dan menjulur ke atas (seperti tirai/curtain)
+  const rayCount = 18;
+  for (let ri = 0; ri < rayCount; ri++) {
+    // Posisi X ray tersebar di sepanjang lebar kanvas dengan sedikit variasi
+    const xBase = (ri / rayCount) * W;
+    const xDrift = Math.sin(ri * 2.3 + t * 0.4) * W * 0.025; // drift perlahan
+    const cx = xBase + xDrift;
+
+    // Titik awal ray (di band aurora) — ikuti slope band asli
+    const slope = (cx / W) * 80;
+    const bandY =
+      H * 0.3 -
+      slope -
+      Math.sin(cx / 140 + t * 0.6) * 25 -
+      Math.cos(cx / 80 - t * 0.3) * 10;
+
+    // Panjang ray berfluktuasi per-ray secara independen
+    const flicker = Math.sin(ri * 1.7 + t * 0.7) * 0.5 + 0.5;      // 0–1
+    const flicker2 = Math.cos(ri * 2.9 + t * 0.5 + 1.2) * 0.5 + 0.5; // 0–1
+    const rayLen = H * (0.08 + flicker * 0.12 + flicker2 * 0.05);
+
+    // Lebar ray — tipis di puncak, agak melebar di pangkal
+    const rayW = 3 + flicker * 5;
+
+    // Pilih warna ray: campur warna-warna band aurora
+    const rayColors = [
+      [116, 255, 200], // cyan-green
+      [120, 180, 255], // biru
+      [200, 120, 255], // ungu
+      [255, 200, 120], // putih kekuningan (bright core)
+    ];
+    const [rr, rg, rb] = rayColors[ri % rayColors.length];
+    const alpha = 0.12 + flicker * 0.15;
+
+    // Gradient vertikal: terang di pangkal (band), pudar ke atas
+    const rayGrad = ctx.createLinearGradient(0, bandY, 0, bandY - rayLen);
+    rayGrad.addColorStop(0, `rgba(${rr},${rg},${rb},${alpha})`);
+    rayGrad.addColorStop(0.4, `rgba(${rr},${rg},${rb},${alpha * 0.5})`);
+    rayGrad.addColorStop(1, `rgba(${rr},${rg},${rb},0)`);
+
+    ctx.save();
+    ctx.filter = `blur(${3 + rayW * 0.5}px)`;
+    ctx.fillStyle = rayGrad;
+    // Bentuk ray: persegi panjang tipis dengan lebar bervariasi
+    ctx.fillRect(cx - rayW / 2, bandY - rayLen, rayW, rayLen);
+    ctx.restore();
+  }
+
+  // ── LAYER 3: Glow lembut di seluruh area aurora (boost bright core) ──────
+  ctx.save();
+  const glowAlpha = 0.06 + Math.sin(t * 0.9) * 0.02;
+  const glowGrad = ctx.createLinearGradient(0, H * 0.05, 0, H * 0.45);
+  glowGrad.addColorStop(0, `rgba(200,220,255,0)`);
+  glowGrad.addColorStop(0.4, `rgba(180,255,220,${glowAlpha})`);
+  glowGrad.addColorStop(0.7, `rgba(160,140,255,${glowAlpha * 0.6})`);
+  glowGrad.addColorStop(1, `rgba(200,220,255,0)`);
+  ctx.filter = "blur(25px)";
+  ctx.fillStyle = glowGrad;
+  ctx.fillRect(0, H * 0.05, W, H * 0.40);
+  ctx.restore();
 
   ctx.globalCompositeOperation = "source-over";
 }
