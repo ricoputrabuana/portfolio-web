@@ -38,7 +38,7 @@ export default function ProjectDetail() {
       {/* Hero Video */}
       <div className="relative w-full h-[60vh] sm:h-[75vh] overflow-hidden">
         <motion.video
-          src="/videos/aurora_thumbnail.webm"
+          src="assets/videos/aurora_thumbnail.webm"
           autoPlay
           loop
           muted
