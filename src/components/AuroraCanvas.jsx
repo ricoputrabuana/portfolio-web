@@ -44,7 +44,7 @@ function drawAurora(ctx, W, H, t) {
     ctx.save();
     ctx.beginPath();
 
-    const baseY = H * 0.38 - i * 25;
+    const baseY = H * 0.33 - i * 25;
 
     ctx.moveTo(0, baseY + 100);
 
