@@ -534,7 +534,7 @@ export default function App() {
                   boxShadow: "0 4px 16px rgba(0,0,0,0.4)", minWidth: 200, maxWidth: 280,
                 }}>
                   {currentVideo?.artwork && (
-                    <img src={currentVideo.artwork} width={32} height={32} style={{ borderRadius: 6, flexShrink: 0 }} />
+                    <img src={currentVideo.artwork} alt={currentVideo.title} width={32} height={32} style={{ borderRadius: 6, flexShrink: 0 }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -694,7 +694,7 @@ export default function App() {
                             borderRadius: 6, marginBottom: 6,
                           }}
                         >
-                          <img src={s.artwork} width={36} height={36} style={{ borderRadius: 6 }} />
+                          <img src={s.artwork} alt={s.title} width={36} height={36} style={{ borderRadius: 6 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 12, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</div>
                             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{s.artist}</div>
@@ -721,7 +721,7 @@ export default function App() {
                         padding: 6, marginBottom: 6, position: "relative", width: "100%",
                       }}
                     >
-                      <img src={song.artwork} width={36} height={36} style={{ borderRadius: 6, flexShrink: 0 }} />
+                      <img src={song.artwork} alt={song.title} width={36} height={36} style={{ borderRadius: 6, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{song.title}</div>
                         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{song.artist}</div>
@@ -878,21 +878,6 @@ const btn = {
   border: "none",
   cursor: "pointer",
   fontSize: "13px",
-};
-const btnIcon = {
-  background: "none",
-  border: "none",
-  color: "white",
-  cursor: "pointer",
-};
-const miniBtn = {
-  background: "rgba(255,255,255,0.12)",
-  border: "none",
-  color: "white",
-  padding: "6px 8px",
-  borderRadius: "6px",
-  cursor: "pointer",
-  fontSize: 12,
 };
 const smallMiniBtn = {
   background: "rgba(255,255,255,0.08)",
