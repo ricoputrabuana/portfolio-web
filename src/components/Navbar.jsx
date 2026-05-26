@@ -5,7 +5,7 @@ export default function Navbar() {
         <h1 className="text-xl font-bold text-purple-300 tracking-wide">
           Rico<span className="text-pink-400"> Putra</span><span className="text-blue-400"> Buana</span>
         </h1>
-        <ul className="flex space-x-10 text-gray-200 font-medium">
+        <ul className="flex space-x-2 text-gray-200 font-medium">
           {["Home", "About", "Projects", "Contact"].map((item) => (
             <li key={item}>
               <a
