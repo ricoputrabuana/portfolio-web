@@ -44,7 +44,7 @@ function drawAurora(ctx, W, H, t) {
     ctx.save();
     ctx.beginPath();
 
-    const baseY = H * 0.3 - i * 25;
+    const baseY = H * 0.38 - i * 25;
 
     ctx.moveTo(0, baseY + 100);
 
@@ -193,7 +193,7 @@ function drawPalms(ctx, W, H, ridges) {
 
 function drawCrescentMoon(ctx, W, H) {
   const cx = W * 0.78;
-  const cy = H * 0.10;
+  const cy = H * 0.16;
   const r = Math.min(W, H) * 0.034;
 
   ctx.save();
