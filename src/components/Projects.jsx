@@ -10,7 +10,7 @@ const projects = [
     tags: ["React", "Canvas", "Framer Motion"],
     link: "#",
     type: "video",
-    src: "/videos/aurora_thumbnail.webm",
+    src: "/assets/videos/aurora_thumbnail.webm",
   },
   {
     title: "AI Image Enhancer",
@@ -18,8 +18,8 @@ const projects = [
       "Hugging Face app that auto-detects faces and enhances images using a GFPGAN + Real-ESRGAN pipeline — built for speed and quality.",
     tags: ["Python", "Hugging Face", "AI"],
     link: "https://image-enhancer-frontend-green.vercel.app/",
-    type: "iframe",
-    src: "https://image-enhancer-frontend-green.vercel.app/",
+    type: "image",
+    src: "/assets/images/image-enhancer.jpg",
   },
   {
     title: "Discord Bot: Aether",
